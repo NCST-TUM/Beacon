@@ -214,6 +214,7 @@ class Parser:
             self.host = kwargs['host']
             self.user = kwargs['user']
             self.passwd = kwargs['passwd']
+            self.port = kwargs.get('port', 3306)
             self.database = None
             self.log_into_db()
         else:
@@ -335,8 +336,10 @@ class Parser:
             self.close_data_line()
 
     def log_into_db(self,):
+        import mysql.connector
         if self.database_name is not None:
             self.database = mysql.connector.connect(
+                port=self.port,
                 host=self.host,
                 user=self.user,
                 passwd=self.passwd,
@@ -449,8 +452,14 @@ class Parser:
 class Decoder:
     def __init__(self, standalone=False):
         self.standalone = standalone
-        parser = Parser(endianness='little')
-        self.combine_bytes = parser.combine_bytes
+        self.parser = Parser(endianness='little',
+                        #host="10.7.1.29",
+                        #database="beacon",
+                        #user="cnts",
+                        #passwd="cnts123passdb",
+                        #port=13306
+                        )
+        self.combine_bytes = self.parser.combine_bytes
         self.tlm_struct = []
         self.db_log = False
         self.database = []
@@ -658,13 +667,17 @@ def bitstring_to_bytes(s):
 
 def main():
     decoder = Decoder(standalone=True)
-    message=input()
+    message=input("Enter the message in HEX here: \n")
     message=message.replace(' ','')
     message=bin(int(message, 16))[2:].zfill(8)
     message= bitstring_to_bytes(message)
     message=np.frombuffer(message, dtype=np.uint8)
+    #decoder.set_db_logging(True)
     decoder.get_telemetry(message)
-    
+    #data = decoder.get_json() 
+    #print(data)
+    #with open('data.json', 'w') as f:
+        #f.write(data)
 
 if __name__ == '__main__':
     main()
